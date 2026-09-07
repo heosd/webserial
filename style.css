@@ -57,6 +57,7 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    min-height: 0;
 }
 
 /* Header */
@@ -133,6 +134,7 @@ body {
     display: grid;
     grid-template-columns: 320px 1fr;
     height: calc(100vh - 57px); /* header height subtraction */
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -468,6 +470,7 @@ body {
     flex-direction: column;
     background-color: var(--bg-card);
     height: 100%;
+    min-height: 0;
     overflow: hidden;
 }
 
@@ -476,6 +479,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    flex-shrink: 0;
     padding: 10px 16px;
     background-color: var(--bg-card);
     border-bottom: 1px solid var(--border-color);
@@ -539,9 +543,36 @@ body {
     cursor: pointer;
 }
 
+.log-limit-control {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.log-limit-input {
+    width: 86px;
+    height: 28px;
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 0.8rem;
+    color: var(--text-primary);
+    background-color: #ffffff;
+}
+
+.log-limit-input:focus {
+    border-color: var(--border-focus);
+    outline: none;
+}
+
 /* Terminal Console Window */
 .terminal-console {
     flex: 1;
+    min-height: 0;
     background-color: var(--bg-terminal);
     font-family: var(--font-mono);
     font-size: 0.85rem;
@@ -619,6 +650,7 @@ body {
 
 /* Terminal Input Area */
 .terminal-input-area {
+    flex-shrink: 0;
     padding: 12px 16px;
     background-color: var(--bg-card);
 }

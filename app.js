@@ -13,6 +13,8 @@ let stopLoopRequested = false;
 let isStreamingLog = false;
 let streamLogFileHandle = null;
 let streamLogWriteChain = Promise.resolve();
+const DEFAULT_MAX_LOG_HISTORY = 1500;
+let maxLogHistory = DEFAULT_MAX_LOG_HISTORY;
 
 // DOM Elements
 const statusDot = document.getElementById('status-dot');
@@ -37,6 +39,7 @@ const deviceInfoPid = document.getElementById('device-info-pid');
 
 // Terminal Elements
 const terminalConsole = document.getElementById('terminal-console');
+const maxLogHistoryInput = document.getElementById('max-log-history-input');
 const autoscrollCheckbox = document.getElementById('autoscroll-checkbox');
 const showTimeCheckbox = document.getElementById('show-time-checkbox');
 const showSystemCheckbox = document.getElementById('show-system-checkbox');
@@ -159,6 +162,9 @@ function setupEventListeners() {
     modeBoth.addEventListener('click', () => setDisplayMode('both'));
     
     // Log controls
+    maxLogHistoryInput.addEventListener('change', handleMaxLogHistoryChange);
+    maxLogHistoryInput.addEventListener('blur', handleMaxLogHistoryChange);
+    maxLogHistoryInput.addEventListener('contextmenu', resetMaxLogHistoryToDefault);
     showTimeCheckbox.addEventListener('change', () => {
         saveSettings();
         rebuildTerminalDOM();
@@ -845,7 +851,7 @@ function addLog(type, bytes) {
     logHistory.push(logItem);
     
     // Keep history capped to avoid performance lag
-    if (logHistory.length > 1500) {
+    if (logHistory.length > maxLogHistory) {
         logHistory.shift();
     }
     
@@ -860,7 +866,7 @@ function addSystemLog(message) {
     
     logHistory.push(logItem);
     
-    if (logHistory.length > 1500) {
+    if (logHistory.length > maxLogHistory) {
         logHistory.shift();
     }
     
@@ -872,11 +878,21 @@ function renderSingleLog(log) {
     if (log.type === 'sys' && !showSystemCheckbox.checked) return;
 
     // Remove placeholder on first log insertion
-    const placeholder = terminalConsole.querySelector('.console-placeholder');
-    if (placeholder) {
-        placeholder.remove();
+    const firstChild = terminalConsole.firstElementChild;
+    if (firstChild && firstChild.classList.contains('console-placeholder')) {
+        firstChild.remove();
     }
     
+    terminalConsole.appendChild(createLogRow(log));
+    trimRenderedLogs();
+    
+    // Auto Scroll if checked
+    if (autoscrollCheckbox.checked) {
+        terminalConsole.scrollTop = terminalConsole.scrollHeight;
+    }
+}
+
+function createLogRow(log) {
     const row = document.createElement('div');
     row.className = `log-row ${log.type}`;
     
@@ -906,7 +922,7 @@ function renderSingleLog(log) {
             contentText = formatBoth(log.data);
         }
         
-        contentSpan.innerHTML = escapeHtml(contentText);
+        contentSpan.textContent = contentText;
     }
     
     if (showTimeCheckbox.checked) {
@@ -914,13 +930,41 @@ function renderSingleLog(log) {
     }
     row.appendChild(dirSpan);
     row.appendChild(contentSpan);
-    
-    terminalConsole.appendChild(row);
-    
-    // Auto Scroll if checked
-    if (autoscrollCheckbox.checked) {
-        terminalConsole.scrollTop = terminalConsole.scrollHeight;
+
+    return row;
+}
+
+function trimRenderedLogs() {
+    while (terminalConsole.childElementCount > maxLogHistory) {
+        const firstLogRow = terminalConsole.querySelector('.log-row');
+        if (!firstLogRow) return;
+        firstLogRow.remove();
     }
+}
+
+function trimLogHistory() {
+    if (logHistory.length > maxLogHistory) {
+        logHistory.splice(0, logHistory.length - maxLogHistory);
+    }
+}
+
+function normalizeMaxLogHistory(value) {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : DEFAULT_MAX_LOG_HISTORY;
+}
+
+function handleMaxLogHistoryChange() {
+    maxLogHistory = normalizeMaxLogHistory(maxLogHistoryInput.value);
+    maxLogHistoryInput.value = String(maxLogHistory);
+    saveSettings();
+    trimLogHistory();
+    rebuildTerminalDOM();
+}
+
+function resetMaxLogHistoryToDefault(event) {
+    event.preventDefault();
+    maxLogHistoryInput.value = String(DEFAULT_MAX_LOG_HISTORY);
+    handleMaxLogHistoryChange();
 }
 
 function setDisplayMode(mode) {
@@ -948,8 +992,16 @@ function rebuildTerminalDOM() {
         return;
     }
     
-    // Re-render logs in history
-    logHistory.forEach(log => renderSingleLog(log));
+    const fragment = document.createDocumentFragment();
+    logHistory.forEach(log => {
+        if (log.type === 'sys' && !showSystemCheckbox.checked) return;
+        fragment.appendChild(createLogRow(log));
+    });
+    terminalConsole.appendChild(fragment);
+
+    if (autoscrollCheckbox.checked) {
+        terminalConsole.scrollTop = terminalConsole.scrollHeight;
+    }
 }
 
 function clearLogs() {
@@ -1240,6 +1292,7 @@ function saveSettings() {
     localStorage.setItem('hexSend', hexSendCheckbox.checked ? 'true' : 'false');
     localStorage.setItem('showTime', showTimeCheckbox.checked ? 'true' : 'false');
     localStorage.setItem('showSystem', showSystemCheckbox.checked ? 'true' : 'false');
+    localStorage.setItem('maxLogHistory', String(maxLogHistory));
     localStorage.setItem('delimiter', delimiterInput.value);
     localStorage.setItem('commandDelay', commandDelayInput.value);
     localStorage.setItem('loopDelay', loopDelayInput.value);
@@ -1286,7 +1339,11 @@ function loadSettings() {
 
     const savedShowSystem = localStorage.getItem('showSystem');
     if (savedShowSystem) showSystemCheckbox.checked = savedShowSystem === 'true';
-    
+
+    const savedMaxLogHistory = localStorage.getItem('maxLogHistory');
+    maxLogHistory = normalizeMaxLogHistory(savedMaxLogHistory || DEFAULT_MAX_LOG_HISTORY);
+    maxLogHistoryInput.value = String(maxLogHistory);
+
     const savedDelim = localStorage.getItem('delimiter');
     if (savedDelim !== null) delimiterInput.value = savedDelim;
     
