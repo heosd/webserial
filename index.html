@@ -127,20 +127,16 @@
                 <!-- Preset Commands Card -->
                 <section class="card" data-collapse-key="quick-command-send">
                     <h2 class="card-title">빠른 명령 전송</h2>
-                    <div class="preset-buttons">
-                        <button type="button" class="btn btn-secondary preset-btn" data-cmd="PING">PING</button>
-                        <button type="button" class="btn btn-secondary preset-btn" data-cmd="STATUS">STATUS</button>
-                        <button type="button" class="btn btn-secondary preset-btn" data-cmd="HELP">HELP</button>
-                        <button type="button" class="btn btn-secondary preset-btn" data-cmd="RESET">RESET</button>
-                    </div>
                     <div class="preset-custom-input">
-                        <div class="input-inline">
-                            <input type="text" id="add-preset-name" class="form-control" placeholder="이름" style="width: 40%">
-                            <input type="text" id="add-preset-cmd" class="form-control" placeholder="명령어" style="width: 45%">
-                            <button id="add-preset-btn" class="btn btn-secondary" style="width: 15%; padding: 6px;">+</button>
+                        <div class="preset-add-form">
+                            <input type="text" id="add-preset-group" class="form-control" placeholder="Group">
+                            <div class="input-inline">
+                                <input type="text" id="add-preset-cmd" class="form-control" placeholder="명령어">
+                                <button id="add-preset-btn" class="btn btn-secondary" style="width: 40px; padding: 6px;">+</button>
+                            </div>
                         </div>
                     </div>
-                    <div id="dynamic-presets" class="preset-buttons dynamic-presets-container">
+                    <div id="dynamic-presets" class="dynamic-presets-container">
                         <!-- User custom presets will go here -->
                     </div>
                 </section>
@@ -223,6 +219,11 @@
 
     <!-- Notification Toast -->
     <div id="toast" class="toast hidden">상태 메시지</div>
+    <div id="preset-context-menu" class="context-menu hidden">
+        <button type="button" data-action="rename">이름 변경</button>
+        <button type="button" data-action="edit-command">명령어 변경</button>
+        <button type="button" data-action="delete">삭제</button>
+    </div>
 
     <!-- Auto Reconnect Status Overlay -->
     <div id="reconnect-overlay" class="reconnect-overlay hidden">
