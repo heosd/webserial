@@ -224,6 +224,12 @@
         <button type="button" data-action="edit-command">명령어 변경</button>
         <button type="button" data-action="delete">삭제</button>
     </div>
+    <div id="quick-command-context-menu" class="context-menu hidden">
+        <button type="button" data-action="export">Export</button>
+        <button type="button" data-action="load">Load</button>
+        <button type="button" data-action="import">Import</button>
+    </div>
+    <input type="file" id="quick-command-import-input" class="hidden" accept="application/json,.json">
 
     <!-- Auto Reconnect Status Overlay -->
     <div id="reconnect-overlay" class="reconnect-overlay hidden">

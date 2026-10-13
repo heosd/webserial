@@ -72,9 +72,13 @@ const addPresetCmd = document.getElementById('add-preset-cmd');
 const addPresetBtn = document.getElementById('add-preset-btn');
 const dynamicPresetsContainer = document.getElementById('dynamic-presets');
 const presetContextMenu = document.getElementById('preset-context-menu');
+const quickCommandCard = document.querySelector('[data-collapse-key="quick-command-send"]');
+const quickCommandContextMenu = document.getElementById('quick-command-context-menu');
+const quickCommandImportInput = document.getElementById('quick-command-import-input');
 let draggedPreset = null;
 let draggedGroup = null;
 let contextPreset = null;
+let quickCommandImportMode = 'load';
 
 // Overlay & Toast
 const toast = document.getElementById('toast');
@@ -199,7 +203,11 @@ function setupEventListeners() {
         addCustomPreset();
     });
     document.addEventListener('click', hidePresetContextMenu);
+    document.addEventListener('click', hideQuickCommandContextMenu);
     presetContextMenu.addEventListener('click', handlePresetContextAction);
+    quickCommandCard.addEventListener('contextmenu', showQuickCommandContextMenu);
+    quickCommandContextMenu.addEventListener('click', handleQuickCommandContextAction);
+    quickCommandImportInput.addEventListener('change', handleQuickCommandImportFile);
     
     // Batch & Loop button events
     batchBtn.addEventListener('click', handleBatchSend);
@@ -1464,6 +1472,114 @@ function savePresetGroups(groups) {
     localStorage.setItem('presetGroups', JSON.stringify(groups));
 }
 
+function getQuickCommandExportData() {
+    return {
+        type: 'webserial.quickCommands',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        presetGroups: getPresetGroups()
+    };
+}
+
+function getQuickCommandExportFilename() {
+    const now = new Date();
+    const yyyy = String(now.getFullYear());
+    const mm = String(now.getMonth() + 1).padStart(2, '0');
+    const dd = String(now.getDate()).padStart(2, '0');
+    return `${yyyy}${mm}${dd}_webserial_quickcommand.json`;
+}
+
+function exportQuickCommands() {
+    const content = JSON.stringify(getQuickCommandExportData(), null, 2);
+    const blob = new Blob([content], { type: 'application/json;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+
+    link.href = url;
+    link.download = getQuickCommandExportFilename();
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    showToast('Quick commands exported.');
+}
+
+function getUniquePresetGroupName(name, usedNames) {
+    const baseName = String(name || 'Default');
+    let nextName = baseName;
+    let suffix = 1;
+
+    while (usedNames.has(nextName)) {
+        nextName = `${baseName}_${suffix}`;
+        suffix += 1;
+    }
+
+    usedNames.add(nextName);
+    return nextName;
+}
+
+function cloneImportedPresetGroups(groups, existingGroups = []) {
+    const usedNames = new Set(existingGroups.map(group => group.name));
+
+    return groups.map(group => ({
+        id: createPresetId('group'),
+        name: getUniquePresetGroupName(group.name, usedNames),
+        collapsed: group.collapsed === true,
+        items: group.items.map(item => ({
+            id: createPresetId('preset'),
+            name: item.name,
+            cmd: item.cmd
+        }))
+    }));
+}
+
+function importQuickCommandsFromText(text, mode = 'load') {
+    let parsed;
+    try {
+        parsed = JSON.parse(text);
+    } catch (error) {
+        showToast('Invalid JSON file.', 5000);
+        return false;
+    }
+
+    const groups = Array.isArray(parsed)
+        ? parsed
+        : (parsed.presetGroups || parsed.groups);
+
+    if (!Array.isArray(groups)) {
+        showToast('Quick command data was not found.', 5000);
+        return false;
+    }
+
+    const importedGroups = normalizePresetGroups(groups);
+
+    if (mode === 'import') {
+        const existingGroups = getPresetGroups();
+        savePresetGroups(existingGroups.concat(cloneImportedPresetGroups(importedGroups, existingGroups)));
+    } else {
+        savePresetGroups(cloneImportedPresetGroups(importedGroups));
+    }
+
+    loadPresets();
+    showToast(mode === 'import' ? 'Quick commands imported.' : 'Quick commands loaded.');
+    return true;
+}
+
+function handleQuickCommandImportFile(event) {
+    const file = event.target.files && event.target.files[0];
+    event.target.value = '';
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+        importQuickCommandsFromText(String(reader.result || ''), quickCommandImportMode);
+    });
+    reader.addEventListener('error', () => {
+        showToast('Failed to read import file.', 5000);
+    });
+    reader.readAsText(file, 'utf-8');
+}
+
 function createPresetId(prefix) {
     if (window.crypto && crypto.randomUUID) {
         return `${prefix}-${crypto.randomUUID()}`;
@@ -1676,6 +1792,7 @@ function createPresetItemUI(groupId, item) {
     });
     wrapper.addEventListener('contextmenu', event => {
         event.preventDefault();
+        event.stopPropagation();
         showPresetContextMenu(event, groupId, item.id);
     });
     
@@ -1795,6 +1912,7 @@ function renamePresetGroup(groupId) {
 }
 
 function showPresetContextMenu(event, groupId, itemId) {
+    hideQuickCommandContextMenu();
     contextPreset = { groupId, itemId };
     presetContextMenu.style.left = `${event.clientX}px`;
     presetContextMenu.style.top = `${event.clientY}px`;
@@ -1818,6 +1936,40 @@ function handlePresetContextAction(event) {
         editPresetCommand(contextPreset.groupId, contextPreset.itemId);
     } else if (action === 'delete') {
         deletePresetItem(contextPreset.groupId, contextPreset.itemId);
+    }
+}
+
+function showQuickCommandContextMenu(event) {
+    if (event.target.closest('.preset-item, .preset-group-toggle, .preset-group-delete, .preset-group-drag-handle')) {
+        return;
+    }
+
+    event.preventDefault();
+    hidePresetContextMenu();
+    quickCommandContextMenu.style.left = `${event.clientX}px`;
+    quickCommandContextMenu.style.top = `${event.clientY}px`;
+    quickCommandContextMenu.classList.remove('hidden');
+}
+
+function hideQuickCommandContextMenu() {
+    quickCommandContextMenu.classList.add('hidden');
+}
+
+function handleQuickCommandContextAction(event) {
+    const action = event.target.dataset.action;
+    if (!action) return;
+
+    event.stopPropagation();
+    hideQuickCommandContextMenu();
+
+    if (action === 'export') {
+        exportQuickCommands();
+    } else if (action === 'load') {
+        quickCommandImportMode = 'load';
+        quickCommandImportInput.click();
+    } else if (action === 'import') {
+        quickCommandImportMode = 'import';
+        quickCommandImportInput.click();
     }
 }
 
