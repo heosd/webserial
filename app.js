@@ -13,77 +13,83 @@ let stopLoopRequested = false;
 let isStreamingLog = false;
 let streamLogFileHandle = null;
 let streamLogWriteChain = Promise.resolve();
+let streamLogBuffer = '';
+let streamLogFlushTimer = null;
+const STREAM_LOG_FLUSH_INTERVAL_MS = 1000;
 const DEFAULT_MAX_LOG_HISTORY = 1500;
 let maxLogHistory = DEFAULT_MAX_LOG_HISTORY;
 
+// DOM Helpers
+const $id = id => document.getElementById(id);
+
 // DOM Elements
-const statusDot = document.getElementById('status-dot');
-const statusText = document.getElementById('status-text');
-const connectBtn = document.getElementById('connect-btn');
-const baudrateSelect = document.getElementById('baudrate-select');
-const customBaudrateInput = document.getElementById('custom-baudrate-input');
-const toggleAdvancedBtn = document.getElementById('toggle-advanced-btn');
-const advancedSettingsPanel = document.getElementById('advanced-settings');
-const autoReconnectCheckbox = document.getElementById('auto-reconnect-checkbox');
+const statusDot = $id('status-dot');
+const statusText = $id('status-text');
+const connectBtn = $id('connect-btn');
+const baudrateSelect = $id('baudrate-select');
+const customBaudrateInput = $id('custom-baudrate-input');
+const toggleAdvancedBtn = $id('toggle-advanced-btn');
+const advancedSettingsPanel = $id('advanced-settings');
+const autoReconnectCheckbox = $id('auto-reconnect-checkbox');
 
 // Serial Options
-const databitsSelect = document.getElementById('databits-select');
-const stopbitsSelect = document.getElementById('stopbits-select');
-const paritySelect = document.getElementById('parity-select');
-const flowcontrolSelect = document.getElementById('flowcontrol-select');
+const databitsSelect = $id('databits-select');
+const stopbitsSelect = $id('stopbits-select');
+const paritySelect = $id('parity-select');
+const flowcontrolSelect = $id('flowcontrol-select');
 
 // Device Info Elements
-const deviceInfoName = document.getElementById('device-info-name');
-const deviceInfoVid = document.getElementById('device-info-vid');
-const deviceInfoPid = document.getElementById('device-info-pid');
+const deviceInfoName = $id('device-info-name');
+const deviceInfoVid = $id('device-info-vid');
+const deviceInfoPid = $id('device-info-pid');
 
 // Terminal Elements
-const terminalConsole = document.getElementById('terminal-console');
-const maxLogHistoryInput = document.getElementById('max-log-history-input');
-const autoscrollCheckbox = document.getElementById('autoscroll-checkbox');
-const showTimeCheckbox = document.getElementById('show-time-checkbox');
-const showSystemCheckbox = document.getElementById('show-system-checkbox');
-const clearLogBtn = document.getElementById('clear-log-btn');
-const exportLogBtn = document.getElementById('export-log-btn');
-const streamLogBtn = document.getElementById('stream-log-btn');
-const modeAscii = document.getElementById('mode-ascii');
-const modeHex = document.getElementById('mode-hex');
-const modeBoth = document.getElementById('mode-both');
+const terminalConsole = $id('terminal-console');
+const maxLogHistoryInput = $id('max-log-history-input');
+const autoscrollCheckbox = $id('autoscroll-checkbox');
+const showTimeCheckbox = $id('show-time-checkbox');
+const showSystemCheckbox = $id('show-system-checkbox');
+const clearLogBtn = $id('clear-log-btn');
+const exportLogBtn = $id('export-log-btn');
+const streamLogBtn = $id('stream-log-btn');
+const modeAscii = $id('mode-ascii');
+const modeHex = $id('mode-hex');
+const modeBoth = $id('mode-both');
 
 // Command Input Elements
-const crCheckbox = document.getElementById('cr-checkbox');
-const lfCheckbox = document.getElementById('lf-checkbox');
-const hexSendCheckbox = document.getElementById('hex-send-checkbox');
-const cmdInput = document.getElementById('cmd-input');
-const sendBtn = document.getElementById('send-btn');
-const batchBtn = document.getElementById('batch-btn');
-const loopBtn = document.getElementById('loop-btn');
-const sendForm = document.getElementById('send-form');
-const charCounter = document.getElementById('char-counter');
+const crCheckbox = $id('cr-checkbox');
+const lfCheckbox = $id('lf-checkbox');
+const hexSendCheckbox = $id('hex-send-checkbox');
+const cmdInput = $id('cmd-input');
+const sendBtn = $id('send-btn');
+const batchBtn = $id('batch-btn');
+const loopBtn = $id('loop-btn');
+const sendForm = $id('send-form');
+const charCounter = $id('char-counter');
 
 // Batch & Loop Config Elements
-const delimiterInput = document.getElementById('delimiter-input');
-const commandDelayInput = document.getElementById('command-delay-input');
-const loopDelayInput = document.getElementById('loop-delay-input');
+const delimiterInput = $id('delimiter-input');
+const commandDelayInput = $id('command-delay-input');
+const loopDelayInput = $id('loop-delay-input');
 
 // Presets
-const addPresetGroup = document.getElementById('add-preset-group');
-const addPresetCmd = document.getElementById('add-preset-cmd');
-const addPresetBtn = document.getElementById('add-preset-btn');
-const dynamicPresetsContainer = document.getElementById('dynamic-presets');
-const presetContextMenu = document.getElementById('preset-context-menu');
+const addPresetGroup = $id('add-preset-group');
+const addPresetCmd = $id('add-preset-cmd');
+const addPresetBtn = $id('add-preset-btn');
+const dynamicPresetsContainer = $id('dynamic-presets');
+const presetContextMenu = $id('preset-context-menu');
 const quickCommandCard = document.querySelector('[data-collapse-key="quick-command-send"]');
-const quickCommandContextMenu = document.getElementById('quick-command-context-menu');
-const quickCommandImportInput = document.getElementById('quick-command-import-input');
+const quickCommandContextMenu = $id('quick-command-context-menu');
+const quickCommandImportInput = $id('quick-command-import-input');
 let draggedPreset = null;
 let draggedGroup = null;
 let contextPreset = null;
 let quickCommandImportMode = 'load';
 
 // Overlay & Toast
-const toast = document.getElementById('toast');
-const reconnectOverlay = document.getElementById('reconnect-overlay');
-const cancelReconnectBtn = document.getElementById('cancel-reconnect-btn');
+const toast = $id('toast');
+const reconnectOverlay = $id('reconnect-overlay');
+const cancelReconnectBtn = $id('cancel-reconnect-btn');
 
 // --- Initialization ---
 
@@ -1133,6 +1139,7 @@ async function startStreamLog() {
 
         isStreamingLog = true;
         streamLogWriteChain = Promise.resolve();
+        streamLogBuffer = '';
         updateStreamLogButton();
         addSystemLog('Stream log started.');
         showToast('Stream log started.');
@@ -1146,9 +1153,11 @@ async function startStreamLog() {
 
 async function stopStreamLog() {
     isStreamingLog = false;
+    clearStreamLogFlushTimer();
     updateStreamLogButton();
 
     try {
+        await flushStreamLogBuffer();
         await streamLogWriteChain;
     } catch (error) {
         console.error('Stream log flush failed:', error);
@@ -1161,7 +1170,7 @@ async function stopStreamLog() {
 
 function updateStreamLogButton() {
     streamLogBtn.classList.toggle('active', isStreamingLog);
-    streamLogBtn.textContent = isStreamingLog ? 'Stop stream' : 'Stream log';
+    streamLogBtn.textContent = isStreamingLog ? 'Stop A' : 'log A';
 }
 
 function appendLogToStream(log) {
@@ -1170,9 +1179,41 @@ function appendLogToStream(log) {
     const line = formatLogLine(log);
     if (line === '') return;
 
+    streamLogBuffer += line;
+    scheduleStreamLogFlush();
+}
+
+function scheduleStreamLogFlush() {
+    if (streamLogFlushTimer) return;
+
+    streamLogFlushTimer = setTimeout(() => {
+        streamLogFlushTimer = null;
+        flushStreamLogBuffer();
+    }, STREAM_LOG_FLUSH_INTERVAL_MS);
+}
+
+function clearStreamLogFlushTimer() {
+    if (!streamLogFlushTimer) return;
+
+    clearTimeout(streamLogFlushTimer);
+    streamLogFlushTimer = null;
+}
+
+async function flushStreamLogBuffer() {
+    if (!streamLogBuffer) return;
+
+    const text = streamLogBuffer;
+    streamLogBuffer = '';
+
     streamLogWriteChain = streamLogWriteChain
         .catch(() => {})
-        .then(() => appendTextToStreamFile(line));
+        .then(() => appendTextToStreamFile(text));
+
+    try {
+        await streamLogWriteChain;
+    } catch (error) {
+        console.error('Stream log buffered flush failed:', error);
+    }
 }
 
 async function appendTextToStreamFile(text) {
