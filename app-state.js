@@ -16,6 +16,12 @@ var streamLogWriteChain = Promise.resolve();
 var streamLogBuffer = '';
 var streamLogFlushTimer = null;
 var STREAM_LOG_FLUSH_INTERVAL_MS = 1000;
+var isOpfsLogEnabled = false;
+var opfsLogWorker = null;
+var opfsLogRequestId = 0;
+var opfsLogPendingRequests = new Map();
+var opfsLogCurrentFileName = '';
+var OPFS_LOG_RETENTION_DAYS = 7;
 var DEFAULT_MAX_LOG_HISTORY = 1500;
 var maxLogHistory = DEFAULT_MAX_LOG_HISTORY;
 
@@ -28,8 +34,6 @@ var statusText = $id('status-text');
 var connectBtn = $id('connect-btn');
 var baudrateSelect = $id('baudrate-select');
 var customBaudrateInput = $id('custom-baudrate-input');
-var toggleAdvancedBtn = $id('toggle-advanced-btn');
-var advancedSettingsPanel = $id('advanced-settings');
 var autoReconnectCheckbox = $id('auto-reconnect-checkbox');
 
 // Serial Options
@@ -85,6 +89,12 @@ var draggedPreset = null;
 var draggedGroup = null;
 var contextPreset = null;
 var quickCommandImportMode = 'load';
+
+// OPFS Log Test
+var opfsLogOnBtn = $id('opfs-log-on-btn');
+var opfsLogOffBtn = $id('opfs-log-off-btn');
+var opfsLogClearAllBtn = $id('opfs-log-clear-all-btn');
+var opfsLogList = $id('opfs-log-list');
 
 // Overlay & Toast
 var toast = $id('toast');

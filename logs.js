@@ -14,6 +14,7 @@ function addLog(type, bytes) {
     // Append dynamically to screen
     renderSingleLog(logItem);
     appendLogToStream(logItem);
+    appendLogToOpfs(logItem);
 }
 
 function addSystemLog(message) {
@@ -28,6 +29,7 @@ function addSystemLog(message) {
     
     renderSingleLog(logItem);
     appendLogToStream(logItem);
+    appendLogToOpfs(logItem);
 }
 
 function renderSingleLog(log) {

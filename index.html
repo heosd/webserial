@@ -41,40 +41,28 @@
                         <input type="number" id="custom-baudrate-input" class="form-control hidden" placeholder="예: 115200" min="1">
                     </div>
 
-                    <div class="advanced-settings-toggle">
-                        <button type="button" id="toggle-advanced-btn" class="text-button">▼ 고급 설정 표시</button>
-                    </div>
-
-                    <div id="advanced-settings" class="advanced-settings-panel hidden">
-                        <div class="form-group">
-                            <label for="databits-select">데이터 비트 (Data Bits)</label>
-                            <select id="databits-select" class="form-control">
-                                <option value="8" selected>8 bits</option>
-                                <option value="7">7 bits</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="stopbits-select">스톱 비트 (Stop Bits)</label>
-                            <select id="stopbits-select" class="form-control">
-                                <option value="1" selected>1 bit</option>
-                                <option value="2">2 bits</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="parity-select">패리티 (Parity)</label>
-                            <select id="parity-select" class="form-control">
-                                <option value="none" selected>None</option>
-                                <option value="even">Even</option>
-                                <option value="odd">Odd</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="flowcontrol-select">흐름 제어 (Flow Control)</label>
-                            <select id="flowcontrol-select" class="form-control">
-                                <option value="none" selected>None</option>
-                                <option value="hardware">Hardware</option>
-                            </select>
-                        </div>
+                    <div class="serial-compact-settings">
+                        <label for="databits-select" title="Data Bits">data</label>
+                        <label for="stopbits-select" title="Stop Bits">stop</label>
+                        <label for="parity-select" title="Parity">parity</label>
+                        <label for="flowcontrol-select" title="Flow Control">flow</label>
+                        <select id="databits-select" class="form-control" title="Data Bits">
+                            <option value="8" selected>8 bits</option>
+                            <option value="7">7 bits</option>
+                        </select>
+                        <select id="stopbits-select" class="form-control" title="Stop Bits">
+                            <option value="1" selected>1 bit</option>
+                            <option value="2">2 bits</option>
+                        </select>
+                        <select id="parity-select" class="form-control" title="Parity">
+                            <option value="none" selected>None</option>
+                            <option value="even">Even</option>
+                            <option value="odd">Odd</option>
+                        </select>
+                        <select id="flowcontrol-select" class="form-control" title="Flow Control">
+                            <option value="none" selected>None</option>
+                            <option value="hardware">Hardware</option>
+                        </select>
                     </div>
 
                     <div class="form-group checkbox-group">
@@ -86,6 +74,18 @@
                     </div>
 
                     <button id="connect-btn" class="btn btn-primary btn-block">포트 연결하기</button>
+                    <div class="serial-device-summary">
+                        <div>
+                            <span>장치 정보 :</span>
+                            <span id="device-info-name">-</span>
+                        </div>
+                        <div>
+                            <span>VID</span>
+                            <span id="device-info-vid">-</span>
+                            <span>PID</span>
+                            <span id="device-info-pid">-</span>
+                        </div>
+                    </div>
                 </section>
 
                 <!-- Batch & Loop Settings Card -->
@@ -105,25 +105,6 @@
                     </div>
                 </section>
 
-                <!-- Port Information Card -->
-                <section class="card" data-collapse-key="connected-device-info">
-                    <h2 class="card-title">연결된 장치 정보</h2>
-                    <div class="info-list">
-                        <div class="info-row">
-                            <span class="info-label">장치 정보</span>
-                            <span id="device-info-name" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Vendor ID</span>
-                            <span id="device-info-vid" class="info-value">-</span>
-                        </div>
-                        <div class="info-row">
-                            <span class="info-label">Product ID</span>
-                            <span id="device-info-pid" class="info-value">-</span>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- Preset Commands Card -->
                 <section class="card" data-collapse-key="quick-command-send">
                     <h2 class="card-title">빠른 명령 전송</h2>
@@ -139,6 +120,17 @@
                     <div id="dynamic-presets" class="dynamic-presets-container">
                         <!-- User custom presets will go here -->
                     </div>
+                </section>
+
+                <!-- Browser Private Log Card -->
+                <section class="card opfs-log-card" data-collapse-key="browser-private-log">
+                    <h2 class="card-title">Browser private log</h2>
+                    <div class="opfs-log-controls">
+                        <button type="button" id="opfs-log-on-btn" class="btn btn-secondary btn-sm">On</button>
+                        <button type="button" id="opfs-log-off-btn" class="btn btn-secondary btn-sm">Off</button>
+                    </div>
+                    <button type="button" id="opfs-log-clear-all-btn" class="btn btn-secondary btn-sm opfs-clear-all-btn">Clear All</button>
+                    <div id="opfs-log-list" class="opfs-log-list"></div>
                 </section>
             </aside>
 
@@ -246,6 +238,7 @@
     <script src="serial.js"></script>
     <script src="commands.js"></script>
     <script src="logs.js"></script>
+    <script src="opfs-log.js"></script>
     <script src="settings.js"></script>
     <script src="quick-command.js"></script>
     <script src="app.js"></script>

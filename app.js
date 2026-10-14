@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Load configurations from localStorage
     loadSettings();
     loadPresets();
+    await initOpfsLog();
     
     // Register UI listeners
     setupEventListeners();

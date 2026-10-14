@@ -15,17 +15,6 @@ function setupEventListeners() {
     customBaudrateInput.addEventListener('input', saveSettings);
     autoReconnectCheckbox.addEventListener('change', saveSettings);
     
-    // Toggle Advanced Settings
-    toggleAdvancedBtn.addEventListener('click', () => {
-        if (advancedSettingsPanel.classList.contains('hidden')) {
-            advancedSettingsPanel.classList.remove('hidden');
-            toggleAdvancedBtn.textContent = '▲ 고급 설정 숨기기';
-        } else {
-            advancedSettingsPanel.classList.add('hidden');
-            toggleAdvancedBtn.textContent = '▼ 고급 설정 표시';
-        }
-    });
-    
     // Connect Button
     connectBtn.addEventListener('click', handleManualConnect);
     
@@ -49,6 +38,9 @@ function setupEventListeners() {
     clearLogBtn.addEventListener('click', clearLogs);
     exportLogBtn.addEventListener('click', exportLogs);
     streamLogBtn.addEventListener('click', toggleStreamLog);
+    opfsLogOnBtn.addEventListener('click', enableOpfsLog);
+    opfsLogOffBtn.addEventListener('click', disableOpfsLog);
+    opfsLogClearAllBtn.addEventListener('click', clearAllOpfsLogs);
     
     // Command sending form
     sendForm.addEventListener('submit', (e) => {
