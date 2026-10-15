@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web Serial Console</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Main Header -->
+        <header class="app-header">
+            <div class="header-title">
+                <span class="icon">🔌</span>
+                <h1>Web Serial Terminal</h1>
+            </div>
+            <div class="status-badge-container">
+                <span id="status-dot" class="status-dot disconnected"></span>
+                <span id="status-text" class="status-text">연결 없음</span>
+            </div>
+        </header>
+
+        <!-- Main Body Grid -->
+        <main class="app-main">
+            <!-- Sidebar Panel: Settings & Quick Actions -->
+            <aside class="sidebar-panel">
+                <!-- Port Settings Card -->
+                <section class="card" data-collapse-key="serial-port-settings">
+                    <h2 class="card-title">시리얼 포트 설정</h2>
+                    <div class="form-group">
+                        <label for="baudrate-select">보오레이트 (Baud Rate)</label>
+                        <select id="baudrate-select" class="form-control">
+                            <option value="9600" selected>9600 bps</option>
+                            <option value="19200">19200 bps</option>
+                            <option value="38400">38400 bps</option>
+                            <option value="57600">57600 bps</option>
+                            <option value="115200">115200 bps</option>
+                            <option value="230400">230400 bps</option>
+                            <option value="custom">직접 입력...</option>
+                        </select>
+                        <input type="number" id="custom-baudrate-input" class="form-control hidden" placeholder="예: 115200" min="1">
+                    </div>
+
+                    <div class="serial-compact-settings">
+                        <label for="databits-select" title="Data Bits">data</label>
+                        <label for="stopbits-select" title="Stop Bits">stop</label>
+                        <label for="parity-select" title="Parity">parity</label>
+                        <label for="flowcontrol-select" title="Flow Control">flow</label>
+                        <select id="databits-select" class="form-control" title="Data Bits">
+                            <option value="8" selected>8 bits</option>
+                            <option value="7">7 bits</option>
+                        </select>
+                        <select id="stopbits-select" class="form-control" title="Stop Bits">
+                            <option value="1" selected>1 bit</option>
+                            <option value="2">2 bits</option>
+                        </select>
+                        <select id="parity-select" class="form-control" title="Parity">
+                            <option value="none" selected>None</option>
+                            <option value="even">Even</option>
+                            <option value="odd">Odd</option>
+                        </select>
+                        <select id="flowcontrol-select" class="form-control" title="Flow Control">
+                            <option value="none" selected>None</option>
+                            <option value="hardware">Hardware</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group checkbox-group">
+                        <label class="switch-container">
+                            <input type="checkbox" id="auto-reconnect-checkbox" checked>
+                            <span class="switch-slider"></span>
+                            <span class="switch-label">자동 재연결 활성화</span>
+                        </label>
+                    </div>
+
+                    <button id="connect-btn" class="btn btn-primary btn-block">포트 연결하기</button>
+                    <div class="serial-device-summary">
+                        <div>
+                            <span>장치 정보 :</span>
+                            <span id="device-info-name">-</span>
+                        </div>
+                        <div>
+                            <span>VID</span>
+                            <span id="device-info-vid">-</span>
+                            <span>PID</span>
+                            <span id="device-info-pid">-</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Batch & Loop Settings Card -->
+                <section class="card" data-collapse-key="batch-loop-settings">
+                    <h2 class="card-title">배치 및 루프 설정</h2>
+                    <div class="form-group">
+                        <label for="delimiter-input">구분자 문자 (기본: ,)</label>
+                        <input type="text" id="delimiter-input" class="form-control" value="," maxlength="5">
+                    </div>
+                    <div class="form-group">
+                        <label for="command-delay-input">명령 간 딜레이 (ms)</label>
+                        <input type="number" id="command-delay-input" class="form-control" value="100" min="0">
+                    </div>
+                    <div class="form-group">
+                        <label for="loop-delay-input">루프 간 딜레이 (ms)</label>
+                        <input type="number" id="loop-delay-input" class="form-control" value="1000" min="0">
+                    </div>
+                </section>
+
+                <!-- Preset Commands Card -->
+                <section class="card" data-collapse-key="quick-command-send">
+                    <h2 class="card-title">빠른 명령 전송</h2>
+                    <div class="preset-custom-input">
+                        <div class="preset-add-form">
+                            <input type="text" id="add-preset-group" class="form-control" placeholder="Group">
+                            <div class="input-inline">
+                                <input type="text" id="add-preset-cmd" class="form-control" placeholder="명령어">
+                                <button id="add-preset-btn" class="btn btn-secondary" style="width: 40px; padding: 6px;">+</button>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="dynamic-presets" class="dynamic-presets-container">
+                        <!-- User custom presets will go here -->
+                    </div>
+                </section>
+
+                <!-- Browser Private Log Card -->
+                <section class="card opfs-log-card" data-collapse-key="browser-private-log">
+                    <h2 class="card-title">Browser private log</h2>
+                    <div class="opfs-log-controls">
+                        <button type="button" id="opfs-log-on-btn" class="btn btn-secondary btn-sm">On</button>
+                        <button type="button" id="opfs-log-off-btn" class="btn btn-secondary btn-sm">Off</button>
+                    </div>
+                    <button type="button" id="opfs-log-clear-all-btn" class="btn btn-secondary btn-sm opfs-clear-all-btn">Clear All</button>
+                    <div id="opfs-log-list" class="opfs-log-list"></div>
+                </section>
+            </aside>
+
+            <!-- Terminal Panel -->
+            <section class="terminal-panel">
+                <!-- Terminal Toolbar -->
+                <div class="terminal-toolbar">
+                    <div class="toolbar-left">
+                        <span class="toolbar-title">CONSOLE</span>
+                        <!-- ASCII / HEX display mode tabs -->
+                        <div class="display-mode-selector">
+                            <button id="mode-ascii" class="mode-btn active" data-mode="ascii">ASCII</button>
+                            <button id="mode-hex" class="mode-btn" data-mode="hex">HEX</button>
+                            <button id="mode-both" class="mode-btn" data-mode="both">ASCII + HEX</button>
+                        </div>
+                    </div>
+                    <div class="toolbar-right">
+                        <label class="log-limit-control" for="max-log-history-input">
+                            <span>Max logs</span>
+                            <input type="number" id="max-log-history-input" class="log-limit-input" min="1" step="100" value="1500">
+                        </label>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" id="autoscroll-checkbox" checked>
+                            <span>Auto Scroll</span>
+                        </label>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" id="show-time-checkbox" checked>
+                            <span>Timestamp</span>
+                        </label>
+                        <label class="checkbox-inline">
+                            <input type="checkbox" id="show-system-checkbox" checked>
+                            <span>System</span>
+                        </label>
+                        <button id="clear-log-btn" class="btn btn-secondary btn-sm">Clear</button>
+                        <button id="export-log-btn" class="btn btn-secondary btn-sm">Log history save</button>
+                        <button id="stream-log-btn" class="btn btn-secondary btn-sm">Log Stream</button>
+                    </div>
+                </div>
+
+                <!-- Console Console Window -->
+                <div id="terminal-console" class="terminal-console">
+                    <!-- Logs will be dynamically added here -->
+                    <div class="console-placeholder">포트를 선택하고 연결하여 통신을 시작하세요.</div>
+                </div>
+
+                <!-- Command Input Area -->
+                <div class="terminal-input-area">
+                    <div class="input-options">
+                        <div class="options-left">
+                            <span class="option-label">명령 설정:</span>
+                            <label class="checkbox-inline">
+                                <input type="checkbox" id="cr-checkbox" checked>
+                                <span>\r (CR)</span>
+                            </label>
+                            <label class="checkbox-inline">
+                                <input type="checkbox" id="lf-checkbox" checked>
+                                <span>\n (LF)</span>
+                            </label>
+                            <label class="checkbox-inline">
+                                <input type="checkbox" id="hex-send-checkbox">
+                                <span>HEX 입력 모드</span>
+                            </label>
+                        </div>
+                        <div class="options-right">
+                            <span id="char-counter">0자</span>
+                        </div>
+                    </div>
+                    <form id="send-form" class="input-form">
+                        <input type="text" id="cmd-input" class="form-control" placeholder="전송할 명령어를 입력하세요..." autocomplete="off">
+                        <button type="submit" id="send-btn" class="btn btn-primary">보내기</button>
+                        <button type="button" id="batch-btn" class="btn btn-secondary">Batch</button>
+                        <button type="button" id="loop-btn" class="btn btn-secondary">Loop</button>
+                    </form>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="toast hidden">상태 메시지</div>
+    <div id="preset-context-menu" class="context-menu hidden">
+        <button type="button" data-action="rename">이름 변경</button>
+        <button type="button" data-action="edit-command">명령어 변경</button>
+        <button type="button" data-action="delete">삭제</button>
+    </div>
+    <div id="quick-command-context-menu" class="context-menu hidden">
+        <button type="button" data-action="export">Export</button>
+        <button type="button" data-action="load">Load</button>
+        <button type="button" data-action="import">Import</button>
+    </div>
+    <input type="file" id="quick-command-import-input" class="hidden" accept="application/json,.json">
+
+    <!-- Auto Reconnect Status Overlay -->
+    <div id="reconnect-overlay" class="reconnect-overlay hidden">
+        <div class="reconnect-card">
+            <span class="spinner"></span>
+            <h3>마지막으로 사용한 장치에 자동 재연결 중...</h3>
+            <p>이전에 승인된 장치를 찾는 중입니다.</p>
+            <button id="cancel-reconnect-btn" class="btn btn-secondary">자동 재연결 취소</button>
+        </div>
+    </div>
+
+    <!-- Script Area Start -->
+    <script src="app.min.js"></script>
+    <!-- Script Area End -->
+</body>
+</html>
