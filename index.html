@@ -167,8 +167,29 @@
                         <button id="clear-log-btn" class="btn btn-secondary btn-sm">Clear</button>
                         <button id="export-log-btn" class="btn btn-secondary btn-sm">Log history save</button>
                         <button id="stream-log-btn" class="btn btn-secondary btn-sm">Log Stream</button>
+                        <button id="highlight-btn" class="btn btn-secondary btn-sm" aria-expanded="false" aria-controls="highlight-popup">Highlight</button>
                     </div>
                 </div>
+
+                <section id="highlight-popup" class="highlight-popup hidden" aria-label="Highlight settings">
+                    <div class="highlight-header"><strong>Highlight</strong><button type="button" id="highlight-close" class="btn btn-secondary btn-sm" aria-label="Close">×</button></div>
+                    <div class="highlight-tabs" role="tablist" aria-label="Highlight 화면">
+                        <button type="button" id="highlight-edit-tab" class="btn btn-secondary btn-sm active" role="tab" aria-selected="true" aria-controls="highlight-editor">코드 편집</button>
+                        <button type="button" id="highlight-result-tab" class="btn btn-secondary btn-sm" role="tab" aria-selected="false" aria-controls="highlight-result-panel">결과 보기</button>
+                    </div>
+                    <div id="highlight-editor" role="tabpanel" aria-labelledby="highlight-edit-tab">
+                    <p>새 RX/TX 로그의 표시 문자열을 검사합니다. 시작 위치는 포함, 끝 위치는 제외합니다. 신뢰할 수 있는 코드만 실행하세요.</p>
+                    <label for="highlight-code">JavaScript 함수 (text, direction)</label>
+                    <textarea id="highlight-code" spellcheck="false"></textarea>
+                    <p class="highlight-help">문자열을 반환하면 일치하는 부분을 강조합니다. false, undefined, 빈 문자열 또는 null은 무시합니다. 범위 배열도 사용할 수 있습니다: [{ start: 0, end: 5 }].</p>
+                    <div class="highlight-actions"><button type="button" id="highlight-apply" class="btn btn-secondary btn-sm" aria-pressed="false">적용</button><button type="button" id="highlight-disable" class="btn btn-secondary btn-sm active" aria-pressed="true">비활성화</button></div>
+                    </div>
+                    <div id="highlight-result-panel" class="highlight-result-panel hidden" role="tabpanel" aria-labelledby="highlight-result-tab">
+                        <div id="highlight-result-meta" class="highlight-result-meta">새 로그를 기다리는 중</div>
+                        <div id="highlight-result" class="highlight-result">강조 결과가 여기에 표시됩니다.</div>
+                    </div>
+                    <div id="highlight-status" class="highlight-status" role="status" aria-live="polite">비활성화됨</div>
+                </section>
 
                 <!-- Console Console Window -->
                 <div id="terminal-console" class="terminal-console">
@@ -239,6 +260,7 @@
     <script src="serial.js"></script>
     <script src="commands.js"></script>
     <script src="logs.js"></script>
+    <script src="highlight.js"></script>
     <script src="opfs-log.js"></script>
     <script src="settings.js"></script>
     <script src="quick-command.js"></script>

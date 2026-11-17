@@ -14,13 +14,14 @@ const files = [
   'serial.js',
   'commands.js',
   'logs.js',
+  'highlight.js',
   'opfs-log.js',
   'settings.js',
   'quick-command.js',
   'app.js'
 ];
 
-const fileWorker = 'opfs-log-worker.js';
+const workers = ['opfs-log-worker.js', 'highlight-worker.js'];
 
 await mkdir(dist, { recursive: true });
 
@@ -41,23 +42,14 @@ const result = await transform(source, {
 
 await writeFile(path.join(dist, 'app.min.js'), result.code);
 
-// -- Worker
-// Worker Minify
-const workerSource = await readFile(
-  path.join(root, fileWorker),
-  'utf8'
-);
-
-const workerResult = await transform(workerSource, {
-  minify: true,
-  target: 'es2022',
-  legalComments: 'none'
-});
-
-await writeFile(
-  path.join(dist, fileWorker),
-  workerResult.code
-);
+// -- Workers
+for (const fileWorker of workers) {
+  const workerSource = await readFile(path.join(root, fileWorker), 'utf8');
+  const workerResult = await transform(workerSource, {
+    minify: true, target: 'es2022', legalComments: 'none'
+  });
+  await writeFile(path.join(dist, fileWorker), workerResult.code);
+}
 
 // -- index.html
 const html = await readFile(path.join(root, 'index.html'), 'utf8');

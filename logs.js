@@ -13,6 +13,7 @@ function addLog(type, bytes) {
     
     // Append dynamically to screen
     renderSingleLog(logItem);
+    queueHighlight(logItem);
     appendLogToStream(logItem);
     appendLogToOpfs(logItem);
 }
@@ -80,7 +81,7 @@ function createLogRow(log) {
             contentText = formatBoth(log.data);
         }
         
-        contentSpan.textContent = contentText;
+        renderHighlightContent(contentSpan, contentText, log.highlight && log.highlight.mode === displayMode ? log.highlight.ranges : []);
     }
     
     if (showTimeCheckbox.checked) {
@@ -89,6 +90,7 @@ function createLogRow(log) {
     row.appendChild(dirSpan);
     row.appendChild(contentSpan);
 
+    if (log.type !== 'sys') log.renderedContent = contentSpan;
     return row;
 }
 

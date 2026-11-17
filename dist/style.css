@@ -985,3 +985,46 @@ body {
         height: 500px;
     }
 }
+
+/* Floating highlight editor stays above the independently scrolling console. */
+.terminal-panel { position: relative; }
+.highlight-popup {
+    position: absolute;
+    z-index: 5;
+    top: 58px;
+    right: 16px;
+    width: min(480px, calc(100% - 32px));
+    max-height: calc(100% - 70px);
+    overflow: auto;
+    padding: 16px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, .2);
+    font-size: .8rem;
+}
+.highlight-header, .highlight-actions { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.highlight-actions { justify-content: flex-start; }
+.highlight-popup p { margin: 8px 0; color: var(--text-secondary); }
+.highlight-popup label { font-weight: 600; }
+.highlight-popup textarea {
+    display: block;
+    width: 100%;
+    min-height: 160px;
+    resize: vertical;
+    margin-top: 6px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font: .8rem/1.5 var(--font-mono);
+    tab-size: 4;
+}
+.highlight-status { margin-top: 8px; color: var(--text-secondary); overflow-wrap: anywhere; }
+.highlight-status.error { color: #b91c1c; }
+.log-content mark { background: #fde047; color: #111827; border-radius: 2px; }
+.highlight-tabs { display: flex; gap: 8px; margin-top: 12px; }
+.highlight-tabs .active { background: #1d4ed8; color: #fff; }
+.highlight-result-panel { min-height: 180px; padding: 16px 0; }
+.highlight-result-meta { color: var(--text-secondary); font-size: .8rem; }
+.highlight-result { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; font: 700 1.8rem/1.4 var(--font-mono); overflow-wrap: anywhere; white-space: pre-wrap; }
+.highlight-result mark { max-width: 100%; background: #fde047; color: #111827; border-radius: 3px; padding: 2px 5px; }

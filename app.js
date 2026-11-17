@@ -15,6 +15,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Register UI listeners
     setupEventListeners();
+    setupHighlight();
     setupCollapsibleCards();
 
     if (navigator.serial) {
